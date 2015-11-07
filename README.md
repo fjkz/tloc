@@ -3,6 +3,7 @@ A trivial code line counter for diff.
 You can get line counts from git or svn diff.
 
 ```
+$ git diff | ./tloc.py
 Name          Code Comment Blank
 --------------------------------
 .gitignore  +    2       0     0
