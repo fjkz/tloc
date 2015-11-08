@@ -140,18 +140,23 @@ def parse_args():
                         help='a git diff or svn diff file.')
     parser.add_argument('--only-add', action='store_true',
                         help='count only added lines.')
+    parser.add_argument('--only-total', action='store_true',
+                        help='print only total counts.')
     args = parser.parse_args()
 
-    return args.PATCHFILE, args.only_add
+    return args.PATCHFILE, args.only_add, args.only_total
 
 if __name__ == '__main__':
-    patchfile, only_add = parse_args()
+    patchfile, only_add, only_total = parse_args()
     patchdata = patchfile.read()
     diffs = diff_per_file(patchdata)
 
-    # The max length of filenames
-    fname_len = max(map(lambda x: len(x[0]), diffs))
-    fname_len = max(fname_len, 5) # For print Total.
+    if not only_total:
+        # The max length of filenames
+        fname_len = max(map(lambda x: len(x[0]), diffs))
+        fname_len = max(fname_len, 5) # For print Total.
+    else:
+        fname_len = 5
 
     # 4, 7, 5 are string lengthes of Code, Comment, Blank
     out_format = '{0:<' + str(fname_len) + '} {1} {2:>4} {3:>7} {4:>5}'
@@ -185,7 +190,8 @@ if __name__ == '__main__':
         total_add_comment += comment
         total_add_blank   += blank
 
-        print out_format.format(filename, '+', code, comment, blank)
+        if not only_total:
+            print out_format.format(filename, '+', code, comment, blank)
 
         if only_add:
             continue
@@ -196,9 +202,11 @@ if __name__ == '__main__':
         total_del_comment += comment
         total_del_blank   += blank
 
-        print out_format.format('', '-', code, comment, blank)
+        if not only_total:
+            print out_format.format('', '-', code, comment, blank)
 
-    print hline
+    if not only_total:
+        print hline
 
     print out_format.format('Total', '+', total_add_code,
                             total_add_comment, total_add_blank)
