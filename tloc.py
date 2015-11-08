@@ -118,33 +118,29 @@ def is_comment(line_str, lang):
         #  *  ok
         #     ng
         #  */ ng
-        if re.match(r'[ \t]*(/\*| \*| \*/|//)', line_str):
-            return True
+        return re.match(r'[ \t]*(/\*| \*| \*/|//)', line_str)
 
-    elif (lang == 'sh'   or
-          lang == 'perl' or
-          lang == 'ruby'):
-        if re.match(r'[ \t]*#', line_str):
-            return True
+    if (lang == 'sh'   or
+        lang == 'perl' or
+        lang == 'ruby'):
+        return re.match(r'[ \t]*#', line_str)
 
-    elif lang == 'python':
+    if lang == 'python':
         # # ok
         # ''' ok '''
         # """
         # ng
         # """
-        if re.match(r'[ \t]*("""|\'\'\'|#)', line_str):
-            return True
+        return re.match(r'[ \t]*("""|\'\'\'|#)', line_str)
 
-    elif lang == 'xml':
+    if lang == 'xml':
         # <!-- ok -->
         # <!-- ok
         # ng
         # -->
-        if re.match(r'[ \t]*(<!--|-->)', line_str):
-            return True
+        return re.match(r'[ \t]*(<!--|-->)', line_str)
 
-    elif lang == 'txt':
+    if lang == 'txt':
         # All lines in a text file are comments.
         return True
 
