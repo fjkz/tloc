@@ -138,12 +138,14 @@ def parse_args():
             description='A trivial code line counter for diff.')
     parser.add_argument('PATCHFILE', nargs='?', default=sys.stdin, type=file,
                         help='a git diff or svn diff file.')
+    parser.add_argument('--only-add', action='store_true',
+                        help='count only added lines.')
     args = parser.parse_args()
-    patchfile = args.PATCHFILE
-    return patchfile
+
+    return args.PATCHFILE, args.only_add
 
 if __name__ == '__main__':
-    patchfile = parse_args()
+    patchfile, only_add = parse_args()
     patchdata = patchfile.read()
     diffs = diff_per_file(patchdata)
 
@@ -185,6 +187,9 @@ if __name__ == '__main__':
 
         print out_format.format(filename, '+', code, comment, blank)
 
+        if only_add:
+            continue
+
         code, comment, blank = count_diff(del_lines, lang)
 
         total_del_code    += code
@@ -197,5 +202,9 @@ if __name__ == '__main__':
 
     print out_format.format('Total', '+', total_add_code,
                             total_add_comment, total_add_blank)
+
+    if only_add:
+        exit()
+
     print out_format.format('', '-', total_del_code,
                             total_del_comment, total_del_blank)
