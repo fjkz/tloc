@@ -3,6 +3,7 @@
 A trivial code line counter for diff.
 """
 
+import argparse
 import re
 import sys
 
@@ -132,9 +133,19 @@ def count_diff(lines, lang):
     code = len(lines) - comments - blanks
     return code, comments, blanks
 
+def parse_args():
+    parser = argparse.ArgumentParser(
+            description='A trivial code line counter for diff.')
+    parser.add_argument('PATCHFILE', nargs='?', default=sys.stdin, type=file,
+                        help='a git diff or svn diff file.')
+    args = parser.parse_args()
+    patchfile = args.PATCHFILE
+    return patchfile
+
 if __name__ == '__main__':
-    patch = sys.stdin.read()
-    diffs = diff_per_file(patch)
+    patchfile = parse_args()
+    patchdata = patchfile.read()
+    diffs = diff_per_file(patchdata)
 
     # The max length of filenames
     fname_len = max(map(lambda x: len(x[0]), diffs))

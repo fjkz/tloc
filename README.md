@@ -2,8 +2,20 @@ A trivial code line counter for diff.
 
 You can get line counts from git or svn diff.
 
+Input `git diff` or `svn diff` with pipe.
+
 ```
 $ git diff | ./tloc.py
+```
+Or, assign a patch file.
+
+```
+$ git diff > patchfile; ./tloc.py patchfile
+```
+
+tloc print the line counts per file like below:
+
+```
 Name          Code Comment Blank
 --------------------------------
 .gitignore  +    2       0     0
