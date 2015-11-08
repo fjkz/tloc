@@ -7,30 +7,49 @@ import argparse
 import re
 import sys
 
+class Line:
+    def __init__(self, string, line_number):
+        # String of the line
+        self.string = string
+        # Line number. Not be used now.
+        self.line_number = line_number
+
+class Diff:
+    def __init__(self, filename):
+        self.filename = filename
+        # List of Line class objects.
+        self.add_lines = []
+        self.del_lines = []
+
 def diff_per_file(patch):
     """
-    Return [(filename, add_lines, del_lines), ...]
+    Return list of Diff objects.
     """
 
     # head of svn and git diff
     ptn_index = re.compile(r'(Index: |diff --git )')
-    ptn_in    = re.compile(r'--- ')
-    ptn_out   = re.compile(r'\+\+\+ ')
+    ptn_from  = re.compile(r'--- ')
+    ptn_to    = re.compile(r'\+\+\+ ')
     ptn_add   = re.compile(r'\+')
     ptn_del   = re.compile(r'-')
+    ptn_range = re.compile(r'@@ -\d+,\d+ \+\d+,\d+ @@')
 
     diffs = []
-    first_file = True
 
-    filename  = None
-    add_lines = None
-    del_lines = None
+    first_file = True
+    from_line  = 0
+    to_line    = 0
+    diff       = None
 
     for l in patch.splitlines():
+        from_line += 1
+        to_line   += 1
+
         # Assume the first line matches to ptn_index.
         if ptn_index.match(l):
             if not first_file:
-                diffs.append((filename, add_lines, del_lines))
+                # Append diff about previous file if new file found.
+                diffs.append(diff)
             else:
                 first_file = False
 
@@ -38,14 +57,30 @@ def diff_per_file(patch):
             # git -> diff --git a/path/to/filename b/path/to/filename
             filename = l.split()[-1].split('/')[-1]
 
-            add_lines = []
-            del_lines = []
-        elif ptn_add.match(l) and not ptn_out.match(l):
-            add_lines.append(l[1:])
-        elif ptn_del.match(l) and not ptn_in.match(l):
-            del_lines.append(l[1:])
+            diff = Diff(filename)
+            continue
 
-    diffs.append((filename, add_lines, del_lines))
+        m = ptn_range.match(l)
+        if m:
+            # '@@ -A,B +C,D @@'
+            # -> '-A,B +C,D'
+            # -> '-A,B', '+C,D'
+            # -> 'A,B', 'C,D'
+            # -> 'A' 'B', 'C' 'D'
+            # -> 'A', 'C'
+            from_line, to_line = map(lambda x: int(x[1:].split(',')[0]),
+                                     m.group()[3:-3].split())
+            continue
+
+        if ptn_add.match(l) and not ptn_to.match(l):
+            line = Line(l[1:], to_line) # remove '+'
+            diff.add_lines.append(line)
+
+        elif ptn_del.match(l) and not ptn_from.match(l):
+            line = Line(l[1:], from_line) # remove '-'
+            diff.del_lines.append(line)
+
+    diffs.append(diff)
     return diffs
 
 def what_lang(filename):
@@ -68,7 +103,7 @@ def what_lang(filename):
 
     return 'default'
 
-def is_comment(line, lang):
+def is_comment(line_str, lang):
     """
     Judge the line is a comment or not from the head of line.
     Can not check strictly if the line is really a comment.
@@ -83,13 +118,13 @@ def is_comment(line, lang):
         #  *  ok
         #     ng
         #  */ ng
-        if re.match(r'[ \t]*(/\*| \*| \*/|//)', line):
+        if re.match(r'[ \t]*(/\*| \*| \*/|//)', line_str):
             return True
 
     elif (lang == 'sh'   or
           lang == 'perl' or
           lang == 'ruby'):
-        if re.match(r'[ \t]*#', line):
+        if re.match(r'[ \t]*#', line_str):
             return True
 
     elif lang == 'python':
@@ -98,7 +133,7 @@ def is_comment(line, lang):
         # """
         # ng
         # """
-        if re.match(r'[ \t]*("""|\'\'\'|#)', line):
+        if re.match(r'[ \t]*("""|\'\'\'|#)', line_str):
             return True
 
     elif lang == 'xml':
@@ -106,7 +141,7 @@ def is_comment(line, lang):
         # <!-- ok
         # ng
         # -->
-        if re.match(r'[ \t]*(<!--|-->)', line):
+        if re.match(r'[ \t]*(<!--|-->)', line_str):
             return True
 
     elif lang == 'txt':
@@ -123,10 +158,10 @@ def count_diff(lines, lang):
     blanks = 0
 
     for line in lines:
-        if re.match(r'^[ \t]*$', line):
+        if re.match(r'^[ \t]*$', line.string):
             blanks += 1
             continue
-        if is_comment(line, lang):
+        if is_comment(line.string, lang):
             comments += 1
             continue
 
@@ -153,7 +188,7 @@ if __name__ == '__main__':
 
     if not only_total:
         # The max length of filenames
-        fname_len = max(map(lambda x: len(x[0]), diffs))
+        fname_len = max(map(lambda diff: len(diff.filename), diffs))
         fname_len = max(fname_len, 5) # For print Total.
     else:
         fname_len = 5
@@ -178,25 +213,21 @@ if __name__ == '__main__':
     total_del_blank   = 0
 
     for diff in diffs:
-        filename  = diff[0]
-        add_lines = diff[1]
-        del_lines = diff[2]
+        lang = what_lang(diff.filename)
 
-        lang = what_lang(filename)
-
-        code, comment, blank = count_diff(add_lines, lang)
+        code, comment, blank = count_diff(diff.add_lines, lang)
 
         total_add_code    += code
         total_add_comment += comment
         total_add_blank   += blank
 
         if not only_total:
-            print out_format.format(filename, '+', code, comment, blank)
+            print out_format.format(diff.filename, '+', code, comment, blank)
 
         if only_add:
             continue
 
-        code, comment, blank = count_diff(del_lines, lang)
+        code, comment, blank = count_diff(diff.del_lines, lang)
 
         total_del_code    += code
         total_del_comment += comment
