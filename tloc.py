@@ -168,21 +168,23 @@ def parse_args():
     parser = argparse.ArgumentParser(
             description='A trivial code line counter for diff.')
     parser.add_argument('PATCHFILE', nargs='?', default=sys.stdin, type=file,
-                        help='a git diff or svn diff file.')
-    parser.add_argument('--only-add', action='store_true',
-                        help='count only added lines.')
-    parser.add_argument('--only-total', action='store_true',
-                        help='print only total counts.')
+                        help='a git diff or svn diff file')
+    parser.add_argument('-a', '--add-only',
+                        action='store_true',
+                        help='count only added lines')
+    parser.add_argument('-t', '--total-only',
+                        action='store_true',
+                        help='print only total counts')
     args = parser.parse_args()
 
-    return args.PATCHFILE, args.only_add, args.only_total
+    return args.PATCHFILE, args.add_only, args.total_only
 
 if __name__ == '__main__':
-    patchfile, only_add, only_total = parse_args()
+    patchfile, add_only, total_only = parse_args()
     patchdata = patchfile.read()
     diffs = diff_per_file(patchdata)
 
-    if not only_total:
+    if not total_only:
         # The max length of filenames
         fname_len = max(map(lambda diff: len(diff.filename), diffs))
         fname_len = max(fname_len, 5) # For print Total.
@@ -217,10 +219,10 @@ if __name__ == '__main__':
         total_add_comment += comment
         total_add_blank   += blank
 
-        if not only_total:
+        if not total_only:
             print out_format.format(diff.filename, '+', code, comment, blank)
 
-        if only_add:
+        if add_only:
             continue
 
         code, comment, blank = count_diff(diff.del_lines, lang)
@@ -229,16 +231,16 @@ if __name__ == '__main__':
         total_del_comment += comment
         total_del_blank   += blank
 
-        if not only_total:
+        if not total_only:
             print out_format.format('', '-', code, comment, blank)
 
-    if not only_total:
+    if not total_only:
         print hline
 
     print out_format.format('Total', '+', total_add_code,
                             total_add_comment, total_add_blank)
 
-    if only_add:
+    if add_only:
         exit()
 
     print out_format.format('', '-', total_del_code,
