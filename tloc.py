@@ -36,22 +36,16 @@ def diff_per_file(patch):
 
     diffs = []
 
-    first_file = True
-    from_line  = 0
-    to_line    = 0
-    diff       = None
+    is_code_line = False
 
     for l in patch.splitlines():
-        from_line += 1
-        to_line   += 1
-
         # Assume the first line matches to ptn_index.
         if ptn_index.match(l):
-            if not first_file:
+            if is_code_line:
                 # Append diff about previous file if new file found.
                 diffs.append(diff)
-            else:
-                first_file = False
+
+            is_code_line = False
 
             # svn -> Index: filename
             # git -> diff --git a/path/to/filename b/path/to/filename
@@ -70,15 +64,21 @@ def diff_per_file(patch):
             # -> 'A', 'C'
             from_line, to_line = map(lambda x: int(x[1:].split(',')[0]),
                                      m.group()[3:-3].split())
+            is_code_line = True
             continue
 
-        if ptn_add.match(l) and not ptn_to.match(l):
-            line = Line(l[1:], to_line) # remove '+'
-            diff.add_lines.append(line)
-
-        elif ptn_del.match(l) and not ptn_from.match(l):
-            line = Line(l[1:], from_line) # remove '-'
-            diff.del_lines.append(line)
+        if is_code_line:
+            if ptn_add.match(l):
+                line = Line(l[1:], to_line) # remove '+'
+                diff.add_lines.append(line)
+                to_line   += 1
+            elif ptn_del.match(l):
+                line = Line(l[1:], from_line) # remove '-'
+                diff.del_lines.append(line)
+                from_line += 1
+            else:
+                from_line += 1
+                to_line   += 1
 
     diffs.append(diff)
     return diffs
