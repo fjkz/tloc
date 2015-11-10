@@ -26,8 +26,13 @@ def diff_per_file(patch):
     Return list of Diff objects.
     """
 
+    # "svn diff" or "git diff"
+    mode = None
+
     # head of svn and git diff
-    ptn_index = re.compile(r'(Index: |diff --git )')
+    ptn_svn_index = re.compile(r'(Index: )')
+    ptn_git_index = re.compile(r'(diff --git )')
+
     ptn_from  = re.compile(r'--- ')
     ptn_to    = re.compile(r'\+\+\+ ')
     ptn_add   = re.compile(r'\+')
@@ -39,10 +44,27 @@ def diff_per_file(patch):
     is_code_line = False
 
     for l in patch.splitlines():
-        # Assume the first line matches to ptn_index.
-        if ptn_index.match(l):
+        # Assume the first line matches to ptn_*_index.
+        m_svn_idx = ptn_svn_index.match(l)
+        m_git_idx = ptn_git_index.match(l)
+
+        # Check if svn or git.
+        if mode == None:
+            if m_svn_idx:
+                mode = "svn diff"
+            elif m_git_idx:
+                mode = "git diff"
+            else:
+                raise ValueError
+
+        if m_svn_idx or m_git_idx:
+            # Check mismatch.
+            if ((m_svn_idx and mode == "git diff") or
+                (m_git_idx and mode == "svn diff")):
+                raise ValueError
+
+            # Append diff about previous file if new file found.
             if is_code_line:
-                # Append diff about previous file if new file found.
                 diffs.append(diff)
 
             is_code_line = False
