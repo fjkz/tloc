@@ -206,12 +206,14 @@ if __name__ == '__main__':
     patchdata = patchfile.read()
     diffs = diff_per_file(patchdata)
 
+    str_total = "Total (" + str(len(diffs)) + " files)"
+
     if not total_only:
         # The max length of filenames
         fname_len = max(map(lambda diff: len(diff.filename), diffs))
-        fname_len = max(fname_len, 5) # For print Total.
+        fname_len = max(fname_len, len(str_total)) # For print Total.
     else:
-        fname_len = 5
+        fname_len = len(str_total)
 
     # 4, 7, 5 are string lengthes of Code, Comment, Blank
     out_format = '{0:<' + str(fname_len) + '} {1} {2:>4} {3:>7} {4:>5}'
@@ -259,7 +261,7 @@ if __name__ == '__main__':
     if not total_only:
         print hline
 
-    print out_format.format('Total', '+', total_add_code,
+    print out_format.format(str_total, '+', total_add_code,
                             total_add_comment, total_add_blank)
 
     if add_only:
