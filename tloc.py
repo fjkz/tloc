@@ -206,7 +206,7 @@ if __name__ == '__main__':
     patchdata = patchfile.read()
     diffs = diff_per_file(patchdata)
 
-    str_total = "Total (" + str(len(diffs)) + " files)"
+    str_total = str(len(diffs)) + " files"
 
     if not total_only:
         # The max length of filenames
