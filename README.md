@@ -1,4 +1,5 @@
-A trivial code line counter for diff.
+tloc : a trivial code line counter for diff
+===========================================
 
 You can get line counts from git or svn diff.
 
@@ -7,13 +8,14 @@ Input `git diff` or `svn diff` with pipe.
 ```
 $ git diff | ./tloc.py
 ```
+
 Or, assign a patch file.
 
 ```
 $ git diff > patchfile; ./tloc.py patchfile
 ```
 
-tloc print the line counts per file like below:
+The line counts per file are printed as below.
 
 ```
 Name              Code Comment Blank
@@ -31,5 +33,5 @@ Total (4 files) +  117      70    52
                 -    0       0     0
 ```
 
-Note that this tool cannot count the comment lines strictly. Some comment lines
-are considered as real lines.
+Note that this tool cannot count comment lines strictly. Some comment lines
+are considered as code lines.
