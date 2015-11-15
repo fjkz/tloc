@@ -7,6 +7,9 @@ import argparse
 import re
 import sys
 
+if sys.version_info < (3, 0):
+    import __future__
+
 class Line:
     def __init__(self, string, line_number):
         # String of the line
@@ -189,7 +192,8 @@ def count_diff(lines, lang):
 def parse_args():
     parser = argparse.ArgumentParser(
             description='A trivial code line counter for diff.')
-    parser.add_argument('PATCHFILE', nargs='?', default=sys.stdin, type=file,
+    parser.add_argument('PATCHFILE', nargs='?',
+                        default=sys.stdin, type=argparse.FileType('r'),
                         help='a git diff or svn diff file')
     parser.add_argument('-a', '--add-only',
                         action='store_true',
@@ -220,11 +224,11 @@ if __name__ == '__main__':
 
     head = out_format.format('Name', ' ', 'Code', 'Comment', 'Blank')
 
-    print head
+    print(head)
 
     hline = '-' * len(head)
 
-    print hline
+    print(hline)
 
     total_add_code    = 0
     total_add_comment = 0
@@ -244,7 +248,7 @@ if __name__ == '__main__':
         total_add_blank   += blank
 
         if not total_only:
-            print out_format.format(diff.filename, '+', code, comment, blank)
+            print(out_format.format(diff.filename, '+', code, comment, blank))
 
         if add_only:
             continue
@@ -256,16 +260,16 @@ if __name__ == '__main__':
         total_del_blank   += blank
 
         if not total_only:
-            print out_format.format('', '-', code, comment, blank)
+            print(out_format.format('', '-', code, comment, blank))
 
     if not total_only:
-        print hline
+        print(hline)
 
-    print out_format.format(str_total, '+', total_add_code,
-                            total_add_comment, total_add_blank)
+    print(out_format.format(str_total, '+', total_add_code,
+                            total_add_comment, total_add_blank))
 
     if add_only:
         exit()
 
-    print out_format.format('', '-', total_del_code,
-                            total_del_comment, total_del_blank)
+    print(out_format.format('', '-', total_del_code,
+                            total_del_comment, total_del_blank))
